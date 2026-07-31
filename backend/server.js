@@ -7,7 +7,6 @@ const rateLimit = require("express-rate-limit");
 const buildRoutes = require("./routes/build");
 
 const app = express();
-const path = require('path');
 
 // Phục vụ tất cả file tĩnh (HTML, CSS, JS) trong thư mục frontend
 app.use(express.static(path.join(__dirname, '../frontend')));
