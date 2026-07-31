@@ -12,13 +12,7 @@ const BUILDS_DIR = path.join(__dirname, "..", "builds");
 fs.ensureDirSync(WORK_ROOT);
 fs.ensureDirSync(BUILDS_DIR);
 
-// QUAN TRONG: build IPA bat buoc phai chay tren may macOS co cai Xcode
-// va co Apple Developer certificate + provisioning profile hop le.
-// Neu backend Node nay dang chay tren Linux, ban can:
-//   - Dat toan bo tien trinh nay tren 1 Mac agent (Mac mini/MacStadium/
-//     GitHub Actions macos runner/Codemagic...), HOAC
-//   - Sua ham run() ben duoi de SSH vao Mac agent va thuc thi tu xa,
-//     roi scp file .ipa ket qua ve lai server nay.
+
 const EXPORT_OPTIONS_PLIST = path.join(TEMPLATE_DIR, "ios", "ExportOptions.plist");
 
 function run(cmd, args, cwd) {
