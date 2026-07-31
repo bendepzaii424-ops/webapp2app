@@ -7,7 +7,15 @@ const rateLimit = require("express-rate-limit");
 const buildRoutes = require("./routes/build");
 
 const app = express();
+const path = require('path');
 
+// Phục vụ tất cả file tĩnh (HTML, CSS, JS) trong thư mục frontend
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+// Khi người dùng vào trang chủ, tự động mở file index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
 // 1. Các Middleware cơ bản
 app.use(cors());
 app.use(express.json());
