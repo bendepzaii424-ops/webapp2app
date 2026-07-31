@@ -28,13 +28,9 @@ function run(cmd, args, cwd) {
   });
 }
 
-/**
- * Build APK Android tu URL hoac file
- */
+
 async function buildAndroidApp({ jobId, source }) {
-  // =========================================================================
-  // 1. MOCK BUILD CHO MÔI TRƯỜNG RENDER (TRÁNH LỖI FAILED TO FETCH / CRASH)
-  // =========================================================================
+
   if (process.env.RENDER || !process.env.ANDROID_HOME) {
     try {
       console.log(`[Mock Build] Bat dau gia lap build cho Job: ${jobId}`);
@@ -48,7 +44,7 @@ async function buildAndroidApp({ jobId, source }) {
       updateJob(jobId, { progress: 75, message: "Dang biendich file APK (Mo phong)..." });
       await new Promise((r) => setTimeout(r, 1500));
 
-      // Tạo một file APK dummy trong thư mục builds/ để người dùng bấm tải xuống được
+     
       const mockApkDest = path.join(BUILDS_DIR, `${jobId}.apk`);
       await fs.writeFile(mockApkDest, "File APK demo duoc tao tu Render.");
 
@@ -65,16 +61,13 @@ async function buildAndroidApp({ jobId, source }) {
     }
   }
 
-  // =========================================================================
-  // 2. BUILD GRADLE THẬT (CHỈ CHẠY DƯỚI LOCAL CÓ ANDROID SDK)
-  // =========================================================================
   const projectDir = path.join(WORK_ROOT, jobId);
 
   try {
     updateJob(jobId, { status: "building", progress: 5, message: "Dang chuan bi project tu template" });
     await fs.copy(TEMPLATE_DIR, projectDir);
 
-    // Cau hinh nguon noi dung
+   
     updateJob(jobId, { progress: 15, message: "Dang cau hinh nguon noi dung" });
     const capacitorConfigPath = path.join(projectDir, "capacitor.config.json");
     const config = await fs.readJson(path.join(projectDir, "capacitor.config.template.json"));
@@ -104,15 +97,12 @@ async function buildAndroidApp({ jobId, source }) {
 
     await fs.writeJson(capacitorConfigPath, config, { spaces: 2 });
 
-    // Dong bo Capacitor
     updateJob(jobId, { progress: 30, message: "Dang dong bo Capacitor" });
     await run("npx", ["cap", "sync", "android"], projectDir);
 
-    // Build APK debug
     updateJob(jobId, { progress: 55, message: "Dang bien dich APK (Gradle)" });
     await run("./gradlew", ["assembleDebug"], path.join(projectDir, "android"));
 
-    // Copy APK ra thu muc builds/
     updateJob(jobId, { progress: 90, message: "Dang dong goi ket qua" });
     const apkSrc = path.join(
       projectDir, "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk"
