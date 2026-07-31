@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+builds/
+dist/
+www/
+*.apk
+*.ipa
+.env

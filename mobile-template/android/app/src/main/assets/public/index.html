@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Web2App — Chuyển URL/File thành ứng dụng di động</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --border: #2a2e38; --text: #eef0f3;
+    --muted: #9aa1ad; --accent: #4f7cff; --accent-2: #34d399; --danger: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text); display: flex; justify-content: center;
+    padding: 40px 16px;
+  }
+  .card {
+    width: 100%; max-width: 560px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tab {
+    flex: 1; padding: 10px; text-align: center; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--border); font-size: 14px; color: var(--muted);
+  }
+  .tab.active { border-color: var(--accent); color: var(--text); background: rgba(79,124,255,.12); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  input[type=text], input[type=file] {
+    width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);
+    background: #10131a; color: var(--text); font-size: 14px; margin-bottom: 16px;
+  }
+  .platform-row { display: flex; gap: 10px; margin-bottom: 20px; }
+  .platform-btn {
+    flex: 1; padding: 14px; border-radius: 10px; border: 1px solid var(--border);
+    text-align: center; cursor: pointer; font-size: 14px; color: var(--muted);
+  }
+  .platform-btn.selected { border-color: var(--accent-2); color: var(--text); background: rgba(52,211,153,.1); }
+  button#generateBtn {
+    width: 100%; padding: 14px; border: none; border-radius: 10px; background: var(--accent);
+    color: white; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  button#generateBtn:disabled { opacity: .5; cursor: not-allowed; }
+  .progress-wrap { margin-top: 20px; display: none; }
+  .progress-bar-bg { width: 100%; height: 10px; background: #10131a; border-radius: 6px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; width: 0%; background: var(--accent-2); transition: width .3s; }
+  .progress-label { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .result { display: none; margin-top: 24px; text-align: center; }
+  .result img { background: white; padding: 10px; border-radius: 8px; }
+  .result a.download {
+    display: block; margin-top: 14px; padding: 12px; background: var(--accent-2);
+    color: #04342c; font-weight: 600; text-decoration: none; border-radius: 10px;
+  }
+  .error { color: var(--danger); font-size: 13px; margin-top: 10px; display: none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Web2App</h1>
+  <p class="sub">Chuyển một URL hoặc file bất kỳ thành ứng dụng Android/iOS, kèm chuột ảo tích hợp sẵn.</p>
+
+  <div class="tabs">
+    <div class="tab active" id="tabUrl" onclick="switchTab('url')">URL</div>
+    <div class="tab" id="tabFile" onclick="switchTab('file')">Tải file lên</div>
+  </div>
+
+  <div class="panel active" id="panelUrl">
+    <input type="text" id="urlInput" placeholder="https://example.com" />
+  </div>
+  <div class="panel" id="panelFile">
+    <input type="file" id="fileInput" />
+  </div>
+
+  <div class="platform-row">
+    <div class="platform-btn selected" id="btnAndroid" onclick="selectPlatform('android')">Android (.apk)</div>
+    <div class="platform-btn" id="btnIos" onclick="selectPlatform('ios')">iOS (.ipa)</div>
+  </div>
+
+  <button id="generateBtn" onclick="generateApp()">Tạo Ứng Dụng</button>
+  <div class="error" id="errorBox"></div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">Đang khởi tạo...</div>
+  </div>
+
+  <div class="result" id="resultBox">
+    <div id="qrcode"></div>
+    <a class="download" id="downloadLink" href="#" download>Tải xuống ứng dụng</a>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.API_BASE || "http://localhost:4000";
+let activeTab = "url";
+let platform = "android";
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById("tabUrl").classList.toggle("active", tab === "url");
+  document.getElementById("tabFile").classList.toggle("active", tab === "file");
+  document.getElementById("panelUrl").classList.toggle("active", tab === "url");
+  document.getElementById("panelFile").classList.toggle("active", tab === "file");
+}
+
+function selectPlatform(p) {
+  platform = p;
+  document.getElementById("btnAndroid").classList.toggle("selected", p === "android");
+  document.getElementById("btnIos").classList.toggle("selected", p === "ios");
+}
+
+function showError(msg) {
+  const box = document.getElementById("errorBox");
+  box.textContent = msg;
+  box.style.display = "block";
+}
+
+function setProgress(pct, label) {
+  document.getElementById("progressWrap").style.display = "block";
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressLabel").textContent = label;
+}
+
+async function generateApp() {
+  document.getElementById("errorBox").style.display = "none";
+  document.getElementById("resultBox").style.display = "none";
+  const btn = document.getElementById("generateBtn");
+
+  const formData = new FormData();
+  formData.append("platform", platform);
+
+  if (activeTab === "url") {
+    const url = document.getElementById("urlInput").value.trim();
+    if (!url) return showError("Vui lòng nhập URL.");
+    formData.append("sourceType", "url");
+    formData.append("url", url);
+  } else {
+    const file = document.getElementById("fileInput").files[0];
+    if (!file) return showError("Vui lòng chọn file.");
+    formData.append("sourceType", "file");
+    formData.append("file", file);
+  }
+
+  btn.disabled = true;
+  setProgress(2, "Đang tải lên...");
+
+  try {
+    const res = await fetch(`${API_BASE}/api/build`, { method: "POST", body: formData });
+    if (!res.ok) throw new Error((await res.json()).error || "Không thể tạo job build.");
+    const { jobId } = await res.json();
+    pollStatus(jobId);
+  } catch (err) {
+    showError(err.message);
+    btn.disabled = false;
+  }
+}
+
+function pollStatus(jobId) {
+  const timer = setInterval(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/build/${jobId}/status`);
+      const data = await res.json();
+      setProgress(data.progress, data.message);
+
+      if (data.status === "done") {
+        clearInterval(timer);
+        onBuildDone(jobId, data.downloadUrl);
+      } else if (data.status === "error") {
+        clearInterval(timer);
+        showError(data.message || "Build thất bại.");
+        document.getElementById("generateBtn").disabled = false;
+      }
+    } catch (err) {
+      clearInterval(timer);
+      showError("Mất kết nối tới máy chủ.");
+      document.getElementById("generateBtn").disabled = false;
+    }
+  }, 2000);
+}
+
+function onBuildDone(jobId, downloadUrl) {
+  document.getElementById("generateBtn").disabled = false;
+  const fullUrl = downloadUrl.startsWith("http") ? downloadUrl : `${API_BASE}${downloadUrl}`;
+  document.getElementById("resultBox").style.display = "block";
+  document.getElementById("downloadLink").href = fullUrl;
+  document.getElementById("qrcode").innerHTML = "";
+  new QRCode(document.getElementById("qrcode"), { text: fullUrl, width: 180, height: 180 });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "appId": "com.webapp2app.generated",
+  "appName": "Web2App",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": true
+  },
+  "ios": {
+    "contentInset": "automatic"
+  }
+}
