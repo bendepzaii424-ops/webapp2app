@@ -1,11 +1,10 @@
-// Job store don gian trong bo nho. Trong san xuat, thay bang Redis/DB
-// de chiu duoc restart server va scale nhieu instance.
+
 const jobs = new Map();
 
 function createJob(jobId, initial = {}) {
   jobs.set(jobId, {
-    status: "queued",     // queued | building | done | error
-    progress: 0,          // 0-100
+    status: "queued",     
+    progress: 0,          
     message: "Da dua vao hang doi",
     downloadUrl: null,
     ...initial,
